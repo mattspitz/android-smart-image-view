@@ -9,56 +9,61 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 public class WebImage implements SmartImage {
-    private static final int CONNECT_TIMEOUT = 5000;
-    private static final int READ_TIMEOUT = 10000;
+	private static final int CONNECT_TIMEOUT = 5000;
+	private static final int READ_TIMEOUT = 10000;
 
-    private static WebImageCache webImageCache;
+	private static WebImageCache webImageCache;
 
-    private String url;
+	private final String url;
+	private final String cookie;
 
-    public WebImage(String url) {
-        this.url = url;
-    }
+	public WebImage(final String url, final String cookie) {
+		this.url = url;
+		this.cookie = cookie;
+	}
 
-    public Bitmap getBitmap(Context context) {
-        // Don't leak context
-        if(webImageCache == null) {
-            webImageCache = new WebImageCache(context);
-        }
+	@Override
+	public Bitmap getBitmap(final Context context) {
+		// Don't leak context
+		if (webImageCache == null) {
+			webImageCache = new WebImageCache(context);
+		}
 
-        // Try getting bitmap from cache first
-        Bitmap bitmap = null;
-        if(url != null) {
-            bitmap = webImageCache.get(url);
-            if(bitmap == null) {
-                bitmap = getBitmapFromUrl(url);
-                if(bitmap != null){
-                    webImageCache.put(url, bitmap);
-                }
-            }
-        }
+		// Try getting bitmap from cache first
+		Bitmap bitmap = null;
+		if (url != null) {
+			bitmap = webImageCache.get(url);
+			if (bitmap == null) {
+				bitmap = getBitmapFromUrl(url);
+				if (bitmap != null) {
+					webImageCache.put(url, bitmap);
+				}
+			}
+		}
 
-        return bitmap;
-    }
+		return bitmap;
+	}
 
-    private Bitmap getBitmapFromUrl(String url) {
-        Bitmap bitmap = null;
+	private Bitmap getBitmapFromUrl(final String url) {
+		Bitmap bitmap = null;
 
-        try {
-            URLConnection conn = new URL(url).openConnection();
-            conn.setConnectTimeout(CONNECT_TIMEOUT);
-            conn.setReadTimeout(READ_TIMEOUT);
-            bitmap = BitmapFactory.decodeStream((InputStream) conn.getContent());
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
+		try {
+			URLConnection conn = new URL(url).openConnection();
+			conn.setConnectTimeout(CONNECT_TIMEOUT);
+			conn.setReadTimeout(READ_TIMEOUT);
+			if (cookie != null)
+				conn.setRequestProperty("Cookie", cookie);
+			bitmap = BitmapFactory.decodeStream((InputStream) conn.getContent());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
-        return bitmap;
-    }
+		return bitmap;
+	}
 
-    public static void removeFromCache(String url) {
-        if(webImageCache != null) {
-            webImageCache.remove(url);
-        }
-    }
+	public static void removeFromCache(final String url) {
+		if (webImageCache != null) {
+			webImageCache.remove(url);
+		}
+	}
 }
